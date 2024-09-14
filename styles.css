@@ -1,0 +1,65 @@
+/* styles.css */
+
+body {
+    margin: 0;
+    padding: 10;
+    background-color: #f9f4f0; /* Cream-colored background */
+    font-family: Arial, sans-serif;
+  }
+  
+  .app {
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .image-box {
+    width: 600px;
+    height: 500px;
+    background-color: white;
+    border: 2px solid #ccc;
+    border-radius: 20px; /* Rounded edges */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden ; /* Ensure image doesn't overflow the rounded corners */
+  }
+  
+  .placeholder {
+    text-align: center;
+    color: #888;
+  }
+  
+  .placeholder .icon {
+    font-size: 48px;
+  }
+  
+  .displayed-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .download-button {
+    margin-left: 20px;
+    padding: 10px 20px;
+    background-color: skyblue; /* Sky blue background */
+    color: white; /* White text */
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .download-button:hover {
+    background-color: #1e90ff; /* Slightly darker on hover */
+  }
+  

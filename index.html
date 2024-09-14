@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Inserter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app">
+    <div class="container">
+      <div class="image-box" id="imageBox">
+        <div class="placeholder" id="placeholder">
+          <i class="icon">🖼️</i>
+          <p>Click to insert image</p>
+        </div>
+        <img src="" alt="Selected" id="displayedImage" class="displayed-image" style="display: none;">
+        <input type="file" accept="image/*" id="fileInput" style="display: none;">
+      </div>
+      <button class="download-button" id="downloadButton">&#x1F4E5; Download</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
