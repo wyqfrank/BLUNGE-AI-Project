@@ -7,7 +7,7 @@ sys.path.append(os.path.expanduser("~/Desktop/segment-anything"))
 # Now import Segment Anything
 from segment_anything import sam_model_registry, SamPredictor
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, render_template, send_file
 import os
 from io import BytesIO
 import base64
@@ -17,6 +17,8 @@ import torch
 
 
 app = Flask(__name__)
+
+
 
 # Load the SAM model
 sam_checkpoint = "sam_vit_h_4b8939.pth"
@@ -33,8 +35,8 @@ input_points = []
 input_labels = []
 
 @app.route('/')
-def index():
-    return app.send_static_file('index.html')
+def home():
+    return render_template('index.html')
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():

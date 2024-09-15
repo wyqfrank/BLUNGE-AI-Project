@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Image Inserter</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- Reference the CSS file using Flask's url_for function -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
@@ -25,6 +26,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Reference the JavaScript file using Flask's url_for function -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
