@@ -15,9 +15,13 @@
           <p>Click to insert image</p>
         </div>
         <img src="" alt="Selected" id="displayedImage" class="displayed-image" style="display: none;">
+        <canvas id="maskCanvas" class="mask-canvas"></canvas>
         <input type="file" accept="image/*" id="fileInput" style="display: none;">
       </div>
-      <button class="download-button" id="downloadButton">&#x1F4E5; Download</button>
+      <div class="buttons">
+        <button class="action-button" id="undoButton">&#x21A9; Undo</button>
+        <button class="action-button" id="downloadButton">&#x1F4E5; Download Mask</button>
+      </div>
     </div>
   </div>
 
