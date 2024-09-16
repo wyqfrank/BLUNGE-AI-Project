@@ -112,6 +112,7 @@ def undo():
             )
 
             mask = masks[0]
+            print(mask)
         else:
             # No points left, create an empty mask
             mask = np.zeros(current_image.shape[:2], dtype=bool)
@@ -128,3 +129,4 @@ def undo():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    
