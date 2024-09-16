@@ -95,18 +95,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  downloadButton.addEventListener('click', () => {
+  downloadButton.addEventListener('click', async () => {
     if (!imageLoaded) {
       alert('Please insert an image first.');
       return;
     }
 
-    // Create a link to download the current displayed image
-    const link = document.createElement('a');
-    link.href = displayedImage.src;
-    link.download = 'segmented_image.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const response = await fetch('/download_image', {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+
+        // Create a link to download the image
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'segmented_image.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const errorData = await response.json();
+        alert('Error: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('An error occurred while downloading the image.');
+    }
   });
 });

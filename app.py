@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.expanduser("~/Desktop/segment-anything"))
 
 from segment_anything import sam_model_registry, SamPredictor
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 import numpy as np
 from PIL import Image
 import torch
@@ -103,6 +103,30 @@ def undo():
     else:
         return jsonify({'result_image': None})
 
+@app.route('/download_image', methods=['POST'])
+def download_image():
+    global input_points, input_labels, predictor, current_image_np, current_image
+
+    if input_points:
+        # Generate the transparent image
+        transparent_image = generate_transparent_image()
+
+        # Save the image to a BytesIO object
+        img_io = BytesIO()
+        transparent_image.save(img_io, format='PNG')
+        img_io.seek(0)
+
+        # Send the image as a file response
+        return send_file(
+            img_io,
+            mimetype='image/png',
+            as_attachment=True,
+            download_name='segmented_image.png'  # Use 'download_name' for Flask >= 2.0
+        )
+    else:
+        # Return a 400 Bad Request with an error message
+        return jsonify({'error': 'No segmentation available. Please select some points first.'}), 400
+    
 def resize_image(image, long_side=1024):
     width, height = image.size
     if width >= height:
@@ -117,16 +141,21 @@ def post_process_mask(mask):
     # Convert mask to uint8 format
     mask = (mask * 255).astype(np.uint8)
 
+    # Apply median blur to reduce noise
+    mask = cv2.medianBlur(mask, 5)
+
     # Define a kernel size for morphological operations
-    kernel_size = 5
+    kernel_size = 7  # Increased kernel size for smoother mask
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
 
-    # Apply morphological closing and opening
+    # Apply morphological closing (dilation followed by erosion)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    # Apply morphological opening (erosion followed by dilation)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     # Apply Gaussian blur to smooth edges
-    mask = cv2.GaussianBlur(mask, (5, 5), 0)
+    mask = cv2.GaussianBlur(mask, (7, 7), 0)
 
     return mask
 
@@ -184,6 +213,41 @@ def generate_masked_image():
     result_image = Image.fromarray(display_image)
 
     return result_image
+
+def generate_transparent_image():
+    global current_image_np, input_points, input_labels, current_image
+
+    # Convert lists to NumPy arrays
+    input_point = np.array(input_points)
+    input_label = np.array(input_labels)
+
+    # Perform segmentation prediction
+    masks, _, _ = predictor.predict(
+        point_coords=input_point,
+        point_labels=input_label,
+        multimask_output=False,
+    )
+
+    # Get the mask
+    mask = masks[0]
+
+    # Post-process the mask
+    mask_processed = post_process_mask(mask)
+
+    # Resize mask to match the original image size
+    mask_resized = cv2.resize(mask_processed, (current_image.size[0], current_image.size[1]), interpolation=cv2.INTER_LINEAR)
+
+    # Threshold the mask to create a binary mask
+    _, mask_bin = cv2.threshold(mask_resized, 128, 255, cv2.THRESH_BINARY)
+
+    # Create an alpha channel based on the processed mask
+    alpha_channel = Image.fromarray(mask_bin).convert('L')
+
+    # Add the alpha channel to the original image
+    image_with_alpha = current_image.copy()
+    image_with_alpha.putalpha(alpha_channel)
+
+    return image_with_alpha
 
 if __name__ == '__main__':
     app.run(debug=True)
