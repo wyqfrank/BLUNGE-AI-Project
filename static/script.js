@@ -2,10 +2,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const imageBox = document.getElementById('imageBox');
   const placeholder = document.getElementById('placeholder');
   const displayedImage = document.getElementById('displayedImage');
-  const maskCanvas = document.getElementById('maskCanvas');
   const fileInput = document.getElementById('fileInput');
   const downloadButton = document.getElementById('downloadButton');
   const undoButton = document.getElementById('undoButton');
+  const loadingIndicator = document.getElementById('loading');
 
   let imageLoaded = false;
 
@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
   fileInput.addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) {
+      // Show the loading indicator
+      loadingIndicator.style.display = 'flex';
+      placeholder.style.display = 'none';
+
       const formData = new FormData();
       formData.append('image', file);
 
@@ -31,23 +35,22 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.onload = (e) => {
         displayedImage.src = e.target.result;
         displayedImage.style.display = 'block';
-        placeholder.style.display = 'none';
+        // Hide the loading indicator
+        loadingIndicator.style.display = 'none';
         imageLoaded = true;
-
-        // Resize the canvas to match the image
-        maskCanvas.width = displayedImage.width;
-        maskCanvas.height = displayedImage.height;
       };
       reader.readAsDataURL(file);
     }
   });
 
-  displayedImage.addEventListener('click', async (event) => {
+  displayedImage.addEventListener('mousedown', async (event) => {
     if (!imageLoaded) return;
 
+    event.preventDefault();  // Prevent default behavior
+
     const rect = displayedImage.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const x = (event.clientX - rect.left) * (displayedImage.naturalWidth / displayedImage.width);
+    const y = (event.clientY - rect.top) * (displayedImage.naturalHeight / displayedImage.height);
 
     // Determine if it's a left or right click
     const label = event.button === 2 ? 0 : 1;  // Right-click: background (0), Left-click: foreground (1)
@@ -62,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const data = await response.json();
-    if (data.mask) {
-      updateMask(data.mask);
+    if (data.result_image) {
+      displayedImage.src = 'data:image/png;base64,' + data.result_image;
     }
   });
 
@@ -80,10 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const data = await response.json();
-    if (data.mask) {
-      updateMask(data.mask);
+    if (data.result_image) {
+      displayedImage.src = 'data:image/png;base64,' + data.result_image;
     } else {
-      clearMask();
+      // If no points are left, reset to the original image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        displayedImage.src = e.target.result;
+      };
+      reader.readAsDataURL(fileInput.files[0]);
     }
   });
 
@@ -93,30 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Create a link to download the current displayed image
     const link = document.createElement('a');
-    link.href = maskCanvas.toDataURL('image/png');
-    link.download = 'segmentation_mask.png';
+    link.href = displayedImage.src;
+    link.download = 'segmented_image.png';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   });
-
-  function updateMask(maskBase64) {
-    const maskImage = new Image();
-    maskImage.onload = () => {
-      const ctx = maskCanvas.getContext('2d');
-      ctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-
-      // Draw the mask with transparency
-      ctx.globalAlpha = 0.5;  // Adjust transparency here
-      ctx.drawImage(maskImage, 0, 0, maskCanvas.width, maskCanvas.height);
-      ctx.globalAlpha = 1.0;  // Reset transparency
-    };
-    maskImage.src = 'data:image/png;base64,' + maskBase64;
-  }
-
-  function clearMask() {
-    const ctx = maskCanvas.getContext('2d');
-    ctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-  }
 });
