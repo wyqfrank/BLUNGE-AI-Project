@@ -148,7 +148,7 @@ def undo():
     else:
         # No more undo steps available
         return jsonify({'error': 'No more undo steps available.'}), 400
-
+# hi
 @app.route('/download_image', methods=['POST'])
 def download_image():
     global overall_mask, current_image
