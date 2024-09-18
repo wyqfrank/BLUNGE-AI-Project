@@ -91,3 +91,27 @@ body {
 .action-button:hover {
   background-color: #1e90ff;
 }
+.mode-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mode-button {
+  padding: 10px 20px;
+  background-color: #eee;
+  color: #333;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mode-button.active {
+  background-color: skyblue;
+  color: white;
+}
+
+.mode-button:hover {
+  background-color: #ccc;
+}

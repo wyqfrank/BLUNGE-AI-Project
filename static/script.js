@@ -7,7 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const undoButton = document.getElementById('undoButton');
   const loadingIndicator = document.getElementById('loading');
 
+  const selectModeButton = document.getElementById('selectModeButton');
+  const unselectModeButton = document.getElementById('unselectModeButton');
+
   let imageLoaded = false;
+  let currentMode = 'select'; // Default mode
+
+  // Mode Toggle Event Listeners
+  selectModeButton.addEventListener('click', () => {
+    currentMode = 'select';
+    selectModeButton.classList.add('active');
+    unselectModeButton.classList.remove('active');
+  });
+
+  unselectModeButton.addEventListener('click', () => {
+    currentMode = 'unselect';
+    unselectModeButton.classList.add('active');
+    selectModeButton.classList.remove('active');
+  });
 
   imageBox.addEventListener('click', () => {
     if (!imageLoaded) {
@@ -52,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const x = (event.clientX - rect.left) * (displayedImage.naturalWidth / displayedImage.width);
     const y = (event.clientY - rect.top) * (displayedImage.naturalHeight / displayedImage.height);
 
-    // Determine if it's a left or right click
-    const label = event.button === 2 ? 0 : 1;  // Right-click: background (0), Left-click: foreground (1)
+    // Determine label based on current mode
+    const label = currentMode === 'select' ? 1 : 0;
 
     // Send the click coordinates to the back end
     const response = await fetch('/click', {
