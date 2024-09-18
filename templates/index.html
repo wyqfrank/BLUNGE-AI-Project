@@ -18,16 +18,18 @@
           <div class="spinner"></div>
           <p>Loading image...</p>
         </div>
+        <!-- Display the checkerboard background when toggling -->
+        <div id="checkerboardOverlay" class="checkerboard" style="display: none;"></div>
         <img src="" alt="Selected" id="displayedImage" class="displayed-image" style="display: none;">
         <input type="file" accept="image/*" id="fileInput" style="display: none;">
       </div>
 
       <div class="buttons">
-        <!-- Mode Toggle Buttons -->
         <div class="mode-toggle">
           <button class="mode-button active" id="selectModeButton">Select</button>
           <button class="mode-button" id="unselectModeButton">Unselect</button>
         </div>
+        <button class="action-button" id="toggleSegmentViewButton">Toggle View</button>
         <button class="action-button" id="undoButton">&#x21A9; Undo</button>
         <button class="action-button" id="downloadButton">&#x1F4E5; Download Mask</button>
       </div>

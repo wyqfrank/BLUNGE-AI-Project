@@ -6,11 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadButton = document.getElementById('downloadButton');
   const undoButton = document.getElementById('undoButton');
   const loadingIndicator = document.getElementById('loading');
+  const checkerboardOverlay = document.getElementById('checkerboardOverlay');
 
   const selectModeButton = document.getElementById('selectModeButton');
   const unselectModeButton = document.getElementById('unselectModeButton');
+  const toggleSegmentViewButton = document.getElementById('toggleSegmentViewButton');
 
   let imageLoaded = false;
+  let isSegmentView = false;
   let currentMode = 'select'; // Default mode
 
   // Mode Toggle Event Listeners
@@ -18,12 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
     currentMode = 'select';
     selectModeButton.classList.add('active');
     unselectModeButton.classList.remove('active');
+    console.log("Current mode: Select");
   });
 
   unselectModeButton.addEventListener('click', () => {
     currentMode = 'unselect';
     unselectModeButton.classList.add('active');
     selectModeButton.classList.remove('active');
+    console.log("Current mode: Unselect");
   });
 
   imageBox.addEventListener('click', () => {
@@ -84,10 +89,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Prevent context menu on right-click
-  displayedImage.addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-  });
+  
+  // Toggle between interactive mode and final segmentation view
+  toggleSegmentViewButton.addEventListener('click', async () => {
+    if (!imageLoaded) return;
+
+    isSegmentView = !isSegmentView;
+
+    if (isSegmentView) {
+        toggleSegmentViewButton.textContent = 'Toggle View';
+        checkerboardOverlay.style.display = 'block';
+
+        // Request the final segmented image (with transparency)
+        const response = await fetch('/download_image', { method: 'POST' });
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            displayedImage.src = url;  // Show final segmented image with checkerboard background
+        }
+    } else {
+        toggleSegmentViewButton.textContent = 'Toggle View';
+        checkerboardOverlay.style.display = 'none';
+
+        // Regenerate the masked image with darkened background (calling the generate_masked_image function)
+        const response = await fetch('/regenerate_masked_image', { method: 'POST' });
+        const data = await response.json();
+        if (data.result_image) {
+            displayedImage.src = 'data:image/png;base64,' + data.result_image;
+        }
+    }
+});
 
   undoButton.addEventListener('click', async () => {
     if (!imageLoaded) return;
@@ -99,13 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await response.json();
     if (data.result_image) {
       displayedImage.src = 'data:image/png;base64,' + data.result_image;
-    } else {
-      // If no points are left, reset to the original image
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        displayedImage.src = e.target.result;
-      };
-      reader.readAsDataURL(fileInput.files[0]);
     }
   });
 

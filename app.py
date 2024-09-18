@@ -240,8 +240,7 @@ def generate_transparent_image():
 
     # ---- Apply Gaussian blur to soften edges ----
     # Apply Gaussian blur to the mask for smoother edges
-    blurred_mask = cv2.GaussianBlur(mask_resized, (51, 51), 0)
-    # blurred_mask = cv2.GaussianBlur(blurred_mask, (31, 31), 0)
+    blurred_mask = cv2.GaussianBlur(mask_resized, (31, 31), 0)
     
     # Normalize the mask to make sure it's binary (between 0 and 255)
     mask_normalized = (blurred_mask / np.max(blurred_mask) * 255).astype(np.uint8)
@@ -254,6 +253,23 @@ def generate_transparent_image():
     image_with_alpha.putalpha(alpha_channel)
 
     return image_with_alpha
+
+@app.route('/regenerate_masked_image', methods=['POST'])
+def regenerate_masked_image():
+    global current_image_np, overall_mask
+
+    if overall_mask is not None:
+        # Regenerate the masked image with the darkened background for unmasked areas
+        result_image = generate_masked_image()
+
+        # Convert the result image to a base64-encoded PNG
+        buffered = BytesIO()
+        result_image.save(buffered, format="PNG")
+        result_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        return jsonify({'result_image': result_base64})
+    else:
+        return jsonify({'error': 'No mask available to regenerate.'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)

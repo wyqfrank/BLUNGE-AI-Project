@@ -112,3 +112,27 @@ body, html {
     height: auto;
   }
 }
+
+/* Checkerboard background for the transparent view */
+.checkerboard {
+  background: repeating-conic-gradient(
+    45deg,
+    #ccc,
+    #ccc 10px,
+    #fff 10px,
+    #fff 20px
+  );
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.image-box {
+  position: relative;
+}
+
+.displayed-image {
+  position: relative;
+  z-index: 2;
+}
