@@ -59,7 +59,7 @@ def upload_image():
     all_masks = mask_generator.generate(current_image_np)
     print(f"Generated {len(all_masks)} masks.")
 
-    # Initialize the overall mask
+
     overall_mask = np.zeros(current_image_np.shape[:2], dtype=np.uint8)
 
     return jsonify({'status': 'success'})
@@ -71,9 +71,8 @@ def click():
     data = request.get_json()
     x = int(data['x'])
     y = int(data['y'])
-    mode = data.get('mode', 'select')  # 'select' or 'unselect'
+    mode = data.get('mode', 'select')  # Ensure 'mode' is fetched correctly
 
-    # Find the segment that contains the clicked point
     clicked_mask = None
     for mask_dict in all_masks:
         mask = mask_dict['segmentation']
@@ -83,18 +82,14 @@ def click():
 
     if clicked_mask is not None:
         if mode == 'select':
-            # Add the clicked mask to the overall mask
             overall_mask = np.logical_or(overall_mask, clicked_mask)
         elif mode == 'unselect':
-            # Remove the clicked mask from the overall mask
             overall_mask = np.logical_and(overall_mask, np.logical_not(clicked_mask))
     else:
         print("No segment found at the clicked point.")
 
-    # Generate and return the updated image with mask
     result_image = generate_masked_image()
 
-    # Convert the result image to a base64-encoded PNG
     buffered = BytesIO()
     result_image.save(buffered, format="PNG")
     result_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -103,8 +98,7 @@ def click():
 
 @app.route('/undo', methods=['POST'])
 def undo():
-    # For simplicity, we won't implement undo functionality for segment-based selection
-    # You can extend this by keeping a history of masks if needed
+
     return jsonify({'result_image': None})
 
 @app.route('/download_image', methods=['POST'])
@@ -113,15 +107,15 @@ def download_image():
 
     if overall_mask is not None and np.any(overall_mask):
         try:
-            # Generate the transparent image
+
             transparent_image = generate_transparent_image()
 
-            # Save the image to a BytesIO object
+
             img_io = BytesIO()
             transparent_image.save(img_io, format='PNG')
             img_io.seek(0)
 
-            # Send the image as a file response
+
             return send_file(
                 img_io,
                 mimetype='image/png',
@@ -147,37 +141,33 @@ def resize_image(image, long_side=1024):
 def generate_masked_image():
     global current_image_np, overall_mask
 
-    # Ensure overall_mask is boolean
+
     mask_bin = overall_mask.astype(np.uint8) * 255
 
-    # Convert original image to numpy array
+
     image_array = current_image_np.copy()
 
-    # Create a composite image
+
     display_image = image_array.copy()
 
-    # Create the darkening effect on the background
-    alpha = 0.5  # Adjust the opacity level (0.0 - 1.0)
+
+    alpha = 0.5  
     dark_background = (image_array * alpha).astype(np.uint8)
 
-    # Apply the darkening effect to the background areas
+
     display_image[mask_bin == 0] = dark_background[mask_bin == 0]
 
-    # ---- Add Gray Outline Around the Mask ----
-    # Find contours
     contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Convert display_image to BGR for OpenCV
+
     display_image_bgr = cv2.cvtColor(display_image, cv2.COLOR_RGB2BGR)
 
-    # Draw the contours on the display_image
+
     cv2.drawContours(display_image_bgr, contours, -1, (128, 128, 128), 2)  # Gray color, thickness 2
 
-    # Convert back to RGB
-    display_image = cv2.cvtColor(display_image_bgr, cv2.COLOR_BGR2RGB)
-    # -----------------------------------------
 
-    # Convert the numpy array back to PIL Image
+    display_image = cv2.cvtColor(display_image_bgr, cv2.COLOR_BGR2RGB)
+
     result_image = Image.fromarray(display_image)
 
     return result_image
@@ -185,13 +175,9 @@ def generate_masked_image():
 def generate_transparent_image():
     global overall_mask, current_image
 
-    # Resize mask to match the original image size if needed
     mask_resized = cv2.resize(overall_mask.astype(np.uint8), (current_image.size[0], current_image.size[1]), interpolation=cv2.INTER_NEAREST)
 
-    # Create an alpha channel based on the processed mask
     alpha_channel = Image.fromarray(mask_resized * 255).convert('L')
-
-    # Add the alpha channel to the original image
     image_with_alpha = current_image.copy()
     image_with_alpha.putalpha(alpha_channel)
 

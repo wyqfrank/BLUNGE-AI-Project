@@ -1,117 +1,119 @@
 /* styles.css */
 
+/* General Styles */
 body {
-  margin: 0;
-  padding: 10px;
-  background-color: #f9f4f0;
   font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
 }
 
 .app {
   display: flex;
-  height: 100vh;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
 .container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  gap: 20px;
 }
 
+/* Image Box Styles */
 .image-box {
-  width: 600px;
-  height: 500px;
-  background-color: white;
-  border: 2px solid #ccc;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   position: relative;
-  overflow: hidden;
+  width: 600px;
+  height: 600px;
+  border: 2px dashed #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff;
 }
 
-.placeholder {
+.placeholder, .loading {
+  position: absolute;
   text-align: center;
-  color: #888;
-}
-
-.placeholder .icon {
-  font-size: 48px;
 }
 
 .displayed-image {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  position: absolute;
-  top: 0;
-  left: 0;
 }
 
-.loading {
-  position: absolute;
-  text-align: center;
-  color: #888;
-}
-
-.loading .spinner {
-  margin: 0 auto 10px auto;
-  width: 40px;
-  height: 40px;
-  border: 4px solid #ccc;
-  border-top-color: #1e90ff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* Buttons Container Styles */
 .buttons {
-  margin-top: 20px;
   display: flex;
-  gap: 10px;
+  flex-direction: column; /* Arrange buttons in a column */
+  gap: 10px; /* Space between buttons */
 }
 
+/* Action Buttons Styles */
 .action-button {
-  padding: 10px 20px;
-  background-color: skyblue;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  padding: 15px 20px;
   font-size: 16px;
   cursor: pointer;
+  border: none;
+  background-color: #007BFF;
+  color: #fff;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+  width: 150px; /* Fixed width for uniformity */
+  text-align: center;
 }
 
 .action-button:hover {
-  background-color: #1e90ff;
-}
-.mode-toggle {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  background-color: #0056b3;
 }
 
-.mode-button {
-  padding: 10px 20px;
-  background-color: #eee;
-  color: #333;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
+.action-button.active {
+  background-color: #28a745;
 }
 
 .mode-button.active {
-  background-color: skyblue;
-  color: white;
+  background-color: #28a745;
 }
 
-.mode-button:hover {
-  background-color: #ccc;
+/* Spinner Styles */
+.spinner {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #007BFF;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .image-box {
+    width: 90%;
+    height: auto;
+    padding-top: 90%;
+  }
+
+  .buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .action-button {
+    width: 100px;
+    padding: 10px 15px;
+  }
 }

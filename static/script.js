@@ -69,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const x = (event.clientX - rect.left) * (displayedImage.naturalWidth / displayedImage.width);
     const y = (event.clientY - rect.top) * (displayedImage.naturalHeight / displayedImage.height);
 
-    // Determine label based on current mode
-    const label = currentMode === 'select' ? 1 : 0;
+    // Determine mode based on currentMode variable
+    const mode = currentMode; // 'select' or 'unselect'
 
     // Send the click coordinates to the back end
     const response = await fetch('/click', {
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ x: Math.round(x), y: Math.round(y), label: label })
+      body: JSON.stringify({ x: Math.round(x), y: Math.round(y), mode: mode })
     });
 
     const data = await response.json();

@@ -9,9 +9,9 @@
 
   <div class="app">
     <div class="container">
+      <!-- Image Box -->
       <div class="image-box" id="imageBox">
         <div class="placeholder" id="placeholder">
-          <i class="icon">🖼️</i>
           <p>Click to insert image</p>
         </div>
         <div class="loading" id="loading" style="display: none;">
@@ -22,12 +22,11 @@
         <input type="file" accept="image/*" id="fileInput" style="display: none;">
       </div>
 
+      <!-- Buttons Container -->
       <div class="buttons">
         <!-- Mode Toggle Buttons -->
-        <div class="mode-toggle">
-          <button class="mode-button active" id="selectModeButton">Select</button>
-          <button class="mode-button" id="unselectModeButton">Unselect</button>
-        </div>
+        <button class="action-button mode-button active" id="selectModeButton">Select</button>
+        <button class="action-button mode-button" id="unselectModeButton">Unselect</button>
         <button class="action-button" id="undoButton">&#x21A9; Undo</button>
         <button class="action-button" id="downloadButton">&#x1F4E5; Download Mask</button>
       </div>
