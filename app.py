@@ -152,25 +152,33 @@ def download_image():
     global overall_mask, current_image
 
     if overall_mask is not None and np.any(overall_mask):
+        print("~~~~~Downloading~~~~~")
         try:
             # Generate the transparent image
             transparent_image = generate_transparent_image()
+
+            print("~~~~~Generated!~~~~~")
 
             # Save the image to a BytesIO object
             img_io = BytesIO()
             transparent_image.save(img_io, format='PNG')
             img_io.seek(0)
 
+            print("~~~~~Saved image to BytesIO~~~~~")
+
             # Send the image as a file response
+            print("~~~~~Sending file~~~~~")
             return send_file(
                 img_io,
                 mimetype='image/png',
                 as_attachment=True,
                 download_name='segmented_image.png'
             )
+        
         except Exception as e:
             print('Error in /download_image:', e)
             return jsonify({'error': 'An error occurred while generating the image.'}), 500
+        
     else:
         return jsonify({'error': 'No segmentation available. Please select some segments first.'}), 400
 
@@ -228,8 +236,15 @@ def generate_transparent_image():
     # Resize mask to match the original image size if needed
     mask_resized = cv2.resize(overall_mask.astype(np.uint8), (current_image.size[0], current_image.size[1]), interpolation=cv2.INTER_NEAREST)
 
-    # Create an alpha channel based on the processed mask
-    alpha_channel = Image.fromarray(mask_resized * 255).convert('L')
+    # ---- Apply Gaussian blur to soften edges ----
+    # Apply Gaussian blur to the mask for smoother edges
+    blurred_mask = cv2.GaussianBlur(mask_resized, (51, 51), 0)
+    
+    # Normalize the mask to make sure it's binary (between 0 and 255)
+    mask_normalized = (blurred_mask / np.max(blurred_mask) * 255).astype(np.uint8)
+
+    # Convert the mask to an alpha channel (255 for opaque, 0 for fully transparent)
+    alpha_channel = Image.fromarray(mask_normalized).convert('L')
 
     # Add the alpha channel to the original image
     image_with_alpha = current_image.copy()
