@@ -241,7 +241,7 @@ def generate_transparent_image():
     # ---- Apply Gaussian blur to soften edges ----
     # Apply Gaussian blur to the mask for smoother edges
     blurred_mask = cv2.GaussianBlur(mask_resized, (51, 51), 0)
-    blurred_mask = cv2.GaussianBlur(blurred_mask, (31, 31), 0)
+    # blurred_mask = cv2.GaussianBlur(blurred_mask, (31, 31), 0)
     
     # Normalize the mask to make sure it's binary (between 0 and 255)
     mask_normalized = (blurred_mask / np.max(blurred_mask) * 255).astype(np.uint8)
