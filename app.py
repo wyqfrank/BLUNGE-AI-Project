@@ -29,6 +29,8 @@ sam.to(device=device)
 predictor = SamPredictor(sam)
 mask_generator = SamAutomaticMaskGenerator(sam)
 
+mask_history = []  # Stack for undo functionality
+
 # Initialize variables to store the image and interaction data
 current_image = None  # PIL Image
 current_image_np = None  # NumPy array
@@ -86,12 +88,15 @@ The function then calls generate_masked_image() to update the displayed image wi
 """
 @app.route('/click', methods=['POST'])
 def click():
-    global overall_mask, all_masks, current_image_np
+    global overall_mask, all_masks, current_image_np, mask_history
 
     data = request.get_json()
     x = int(data['x'])
     y = int(data['y'])
     mode = data.get('mode', 'select')  # 'select' or 'unselect'
+
+    # Save the current state of the mask for undo functionality
+    mask_history.append(overall_mask.copy())
 
     # Find the segment that contains the clicked point
     clicked_mask = None
@@ -123,9 +128,24 @@ def click():
 
 @app.route('/undo', methods=['POST'])
 def undo():
-    # For simplicity, we won't implement undo functionality for segment-based selection
-    # You can extend this by keeping a history of masks if needed
-    return jsonify({'result_image': None})
+    global overall_mask, mask_history
+
+    if mask_history:
+        # Revert to the last mask state by popping from the stack
+        overall_mask = mask_history.pop()
+
+        # Generate the updated image
+        result_image = generate_masked_image()
+
+        # Convert the result image to a base64-encoded PNG
+        buffered = BytesIO()
+        result_image.save(buffered, format="PNG")
+        result_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        return jsonify({'result_image': result_base64})
+    else:
+        # No more undo steps available
+        return jsonify({'error': 'No more undo steps available.'}), 400
 
 @app.route('/download_image', methods=['POST'])
 def download_image():
@@ -183,18 +203,18 @@ def generate_masked_image():
     # Apply the darkening effect to the background areas
     display_image[mask_bin == 0] = dark_background[mask_bin == 0]
 
-    # ---- Add Gray Outline Around the Mask ----
-    # Find contours
-    contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # # ---- Add Gray Outline Around the Mask ----
+    # # Find contours
+    # contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Convert display_image to BGR for OpenCV
-    display_image_bgr = cv2.cvtColor(display_image, cv2.COLOR_RGB2BGR)
+    # # Convert display_image to BGR for OpenCV
+    # display_image_bgr = cv2.cvtColor(display_image, cv2.COLOR_RGB2BGR)
 
-    # Draw the contours on the display_image
-    cv2.drawContours(display_image_bgr, contours, -1, (128, 128, 128), 2)  # Gray color, thickness 2
+    # # Draw the contours on the display_image
+    # cv2.drawContours(display_image_bgr, contours, -1, (128, 128, 128), 2)  # Gray color, thickness 2
 
-    # Convert back to RGB
-    display_image = cv2.cvtColor(display_image_bgr, cv2.COLOR_BGR2RGB)
+    # # Convert back to RGB
+    # display_image = cv2.cvtColor(display_image_bgr, cv2.COLOR_BGR2RGB)
     # -----------------------------------------
 
     # Convert the numpy array back to PIL Image
