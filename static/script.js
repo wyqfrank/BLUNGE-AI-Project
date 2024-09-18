@@ -62,25 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   displayedImage.addEventListener('mousedown', async (event) => {
     if (!imageLoaded) return;
-
+  
     event.preventDefault();  // Prevent default behavior
-
+  
     const rect = displayedImage.getBoundingClientRect();
     const x = (event.clientX - rect.left) * (displayedImage.naturalWidth / displayedImage.width);
     const y = (event.clientY - rect.top) * (displayedImage.naturalHeight / displayedImage.height);
-
-    // Determine label based on current mode
-    const label = currentMode === 'select' ? 1 : 0;
-
-    // Send the click coordinates to the back end
+  
+    // Send the click coordinates and mode ('select' or 'unselect') to the back end
     const response = await fetch('/click', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ x: Math.round(x), y: Math.round(y), label: label })
+      body: JSON.stringify({ x: Math.round(x), y: Math.round(y), mode: currentMode }) // Send currentMode directly
     });
-
+  
     const data = await response.json();
     if (data.result_image) {
       displayedImage.src = 'data:image/png;base64,' + data.result_image;

@@ -110,9 +110,11 @@ def click():
         if mode == 'select':
             # Add the clicked mask to the overall mask
             overall_mask = np.logical_or(overall_mask, clicked_mask)
+            print(f"Selected mask at point ({x}, {y}).")
         elif mode == 'unselect':
-            # Remove the clicked mask from the overall mask
+            # Remove the clicked mask from the overall mask by using logical_not
             overall_mask = np.logical_and(overall_mask, np.logical_not(clicked_mask))
+            print(f"Unselected mask at point ({x}, {y}).")
     else:
         print("No segment found at the clicked point.")
 
@@ -239,6 +241,7 @@ def generate_transparent_image():
     # ---- Apply Gaussian blur to soften edges ----
     # Apply Gaussian blur to the mask for smoother edges
     blurred_mask = cv2.GaussianBlur(mask_resized, (51, 51), 0)
+    blurred_mask = cv2.GaussianBlur(blurred_mask, (31, 31), 0)
     
     # Normalize the mask to make sure it's binary (between 0 and 255)
     mask_normalized = (blurred_mask / np.max(blurred_mask) * 255).astype(np.uint8)
