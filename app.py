@@ -3,7 +3,7 @@ Setting up environment
 """
 import sys
 import os
-
+# test 
 # Add the Segment Anything directory to the Python path
 sys.path.append(os.path.expanduser("~/Desktop/segment-anything"))
 
