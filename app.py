@@ -1,3 +1,6 @@
+"""
+Setting up environment
+"""
 import sys
 import os
 
@@ -13,9 +16,10 @@ import base64
 from io import BytesIO
 import cv2
 
+# Initialise a new Flask web app
 app = Flask(__name__)
 
-# Load the SAM model
+# Load the pretrained SAM model
 sam_checkpoint = "sam_vit_h_4b8939.pth"
 model_type = "vit_h"
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -31,10 +35,18 @@ current_image_np = None  # NumPy array
 all_masks = []  # List of all possible segments
 overall_mask = None  # The combined mask of selected segments
 
+# Render html file, webpage for handling images
 @app.route('/')
 def home():
     return render_template('index.html')
 
+"""
+Handles image uploading
+The uploaded image is processed, resized to 1024 pixels on the longer side, and converted to a NumPy array.
+The predictor.set_image method prepares the image for future mask generation.
+mask_generator.generate: Generates all possible masks for the image and stores them in all_masks.
+overall_mask: Initialises a blank mask where selected segments will be added.
+"""
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     global current_image, current_image_np, predictor, mask_generator, all_masks, overall_mask
@@ -64,6 +76,14 @@ def upload_image():
 
     return jsonify({'status': 'success'})
 
+"""
+Handles user interactions with the image
+When the user clicks on a point (x, y), the function searches through the all_masks to find the mask containing that point.
+If a mask is found:
+    Select mode: Adds the mask to overall_mask.
+    Unselect mode: Removes the mask from overall_mask.
+The function then calls generate_masked_image() to update the displayed image with the mask applied.
+"""
 @app.route('/click', methods=['POST'])
 def click():
     global overall_mask, all_masks, current_image_np
