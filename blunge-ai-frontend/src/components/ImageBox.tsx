@@ -4,6 +4,8 @@ type ImageBoxProps = {
   mode: 'select' | 'unselect';
   isSegmentView: boolean;
   onUndo: () => Promise<string | null>;
+  activeTool: 'erase' | 'restore' | null; 
+  
 };
 
 const ImageBox: React.FC<ImageBoxProps> = ({ mode, isSegmentView, onUndo }) => {

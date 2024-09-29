@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaHandPointer, FaUndo, FaEye, FaEraser, FaDownload } from "react-icons/fa";
+import { FaHandPointer, FaUndo, FaEye, FaEraser, FaDownload, FaMagic } from "react-icons/fa";
 
 
 type ButtonProps = {
@@ -13,23 +13,26 @@ const Button: React.FC<ButtonProps> = ({ text, onClick, isActive }) => {
   
     // Choose the icon based on the button text
     switch (text) {
-      case 'Select':
-        icon = <FaHandPointer />;
-        break;
-      case 'Unselect':
-        icon = <FaEraser />;
-        break;
-      case 'Undo':
-        icon = <FaUndo />;
-        break;
-      case 'Toggle View':
-        icon = <FaEye />;
-        break;
-      case 'Download Mask':
-        icon = <FaDownload />;
-        break;
-      default:
-        icon = null;
+        case 'Select':
+            icon = <FaHandPointer />;
+            break;
+        case 'Unselect':
+            icon = <FaEraser />;
+            break;
+        case 'Brush':
+            icon = <FaMagic />;
+            break;
+        case 'Undo':
+            icon = <FaUndo />;
+            break;
+        case 'Toggle View':
+            icon = <FaEye />;
+            break;
+        case 'Download Mask':
+            icon = <FaDownload />;
+            break;
+        default:
+            icon = null;
     }
     return (
         <button className={`action-button ${isActive ? 'active' : ''}`} onClick={onClick}>
