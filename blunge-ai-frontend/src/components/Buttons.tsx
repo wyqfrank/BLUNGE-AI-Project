@@ -5,6 +5,7 @@ type ButtonProps = {
   text: string;
   onClick: () => void;
   isActive?: boolean;
+  disabled?: boolean;
   onMouseDown?: () => void;  // Optional mouse down event
   onMouseUp?: () => void;    // Optional mouse up event
   onTouchStart?: () => void; // Optional touch start event
@@ -18,7 +19,8 @@ const Button: React.FC<ButtonProps> = ({
   onMouseDown,
   onMouseUp,
   onTouchStart,
-  onTouchEnd
+  onTouchEnd,
+  disabled
 }) => {
   let icon;
 
@@ -50,7 +52,8 @@ const Button: React.FC<ButtonProps> = ({
       onMouseDown={onMouseDown}  // Handle mouse down event
       onMouseUp={onMouseUp}      // Handle mouse up event
       onTouchStart={onTouchStart} // Handle touch start event
-      onTouchEnd={onTouchEnd}     // Handle touch end event
+      onTouchEnd={onTouchEnd}
+      disabled={disabled}    // Handle touch end event
     >
       {icon}
       <span style={{ marginLeft: '8px' }}>{text}</span>

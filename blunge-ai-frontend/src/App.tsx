@@ -12,32 +12,55 @@ const App: React.FC = () => {
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isToggleViewActive, setIsToggleViewActive] = useState(false);
-  const [brushSize, setBrushSize] = useState(20); // Brush size state
+  const [brushSize, setBrushSize] = useState(20);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement | null>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const processedImageRef = useRef<HTMLImageElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
+  useEffect(() => {
+    if (processedImage) {
+      const img = new Image();
+      img.src = processedImage;
+      img.onload = () => {
+        processedImageRef.current = img;
+        initializeCanvas();
+      };
+    }
+  }, [processedImage]);
 
   useEffect(() => {
     if (uploadedImage) {
       const img = new Image();
       img.src = URL.createObjectURL(uploadedImage);
-      originalImageRef.current = img;
+      img.onload = () => {
+        originalImageRef.current = img;
+      };
     }
   }, [uploadedImage]);
 
-  
-  // Handle image upload
+  const initializeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return; // Add null check
+
+    const ctx = canvas.getContext('2d');
+    if (ctx && processedImageRef.current) {
+      canvas.width = processedImageRef.current.width;
+      canvas.height = processedImageRef.current.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setUploadedImage(event.target.files[0]);
       setProcessedImage(null);
+      initializeCanvas();
     }
   };
 
-  // Handle background removal
   const handleMagicRemove = async () => {
     if (!uploadedImage) {
       alert("Please upload an image first.");
@@ -69,58 +92,125 @@ const App: React.FC = () => {
     }
   };
 
-  // Handle cursor movement when brush tool is active
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (activeTool) {
-      const { clientX, clientY } = e;
-      setCursorPosition({ x: clientX, y: clientY });
+      const containerRect = imageContainerRef.current?.getBoundingClientRect();
+      if (containerRect) {
+        const scale = processedImageRef.current ? processedImageRef.current.width / containerRect.width : 1;
+        const offsetX = (e.clientX - containerRect.left) * scale;
+        const offsetY = (e.clientY - containerRect.top) * scale;
+        setCursorPosition({ x: offsetX / scale, y: offsetY / scale });
+
+        if (isDrawing) {
+          draw(offsetX, offsetY);
+        }
+      }
     }
   };
 
-  // Handle mouse leave (hide cursor circle when leaving the app area)
-  const handleMouseLeave = () => {
-    if (activeTool) {
-      setCursorPosition(null);
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (activeTool && canvasRef.current) {
+      setIsDrawing(true);
+      const containerRect = imageContainerRef.current?.getBoundingClientRect();
+      if (containerRect) {
+        const scale = processedImageRef.current ? processedImageRef.current.width / containerRect.width : 1;
+        const offsetX = (e.clientX - containerRect.left) * scale;
+        const offsetY = (e.clientY - containerRect.top) * scale;
+        draw(offsetX, offsetY);
+      }
     }
   };
 
-  // Handle clicking on ImageBox to trigger file input
+  const handleMouseUp = () => {
+    setIsDrawing(false);
+  };
+
+  const draw = (x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return; // Add null check
+
+    const ctx = canvas.getContext('2d');
+    if (ctx && activeTool && processedImageRef.current && originalImageRef.current) {
+      ctx.save();
+
+      // Set up the brush
+      ctx.beginPath();
+      ctx.arc(x, y, brushSize, 0, Math.PI * 2, true);
+      ctx.closePath();
+
+      if (activeTool === 'erase') {
+        // For erasing, we'll make the area transparent
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fill();
+      } else if (activeTool === 'restore') {
+        // For restoring, we'll draw the original image in this spot
+        ctx.clip();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(originalImageRef.current, 0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.restore();
+    }
+  };
+
   const handleImageBoxClick = () => {
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.click();
+    if (!activeTool) {
+      const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.click();
+      }
     }
   };
 
-  // Handle Toggle View button press
   const handleToggleViewPress = () => {
     setIsToggleViewActive(true);
   };
 
-  // Handle Toggle View button release
   const handleToggleViewRelease = () => {
     setIsToggleViewActive(false);
   };
 
-  // Handle closing the brush tool (hide the circle and deactivate the tool)
   const handleCloseBrushTool = () => {
-    setActiveTool(null); // Hide the circle
-    setShowBrushTool(false); // Close the brush tool
+    setActiveTool(null);
+    setShowBrushTool(false);
   };
 
   return (
-    <div className="app" onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+    <div className="app" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
       <div className="container">
         <div
           className="image-box-container"
+          ref={imageContainerRef}
           style={{ position: 'relative' }}
           onClick={handleImageBoxClick}
+          onMouseDown={handleMouseDown}
+          onDragStart={(e) => e.preventDefault()}
         >
           <ImageBox
             isSegmentView={isSegmentView}
-            imageUrl={isToggleViewActive ? (uploadedImage ? URL.createObjectURL(uploadedImage) : null) : processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)}
+            imageUrl={
+              isToggleViewActive
+                ? uploadedImage
+                  ? URL.createObjectURL(uploadedImage)
+                  : null
+                : processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)
+            }
             showCheckerboard={Boolean(processedImage)}
           />
+
+          {processedImage && (
+            <canvas
+              ref={canvasRef}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
 
           {loading && (
             <div className="spinner-overlay">
@@ -131,13 +221,14 @@ const App: React.FC = () => {
           {activeTool && cursorPosition && (
             <div
               style={{
-                position: 'fixed',
+                position: 'absolute',
                 left: cursorPosition.x - brushSize / 2,
                 top: cursorPosition.y - brushSize / 2,
                 width: brushSize,
                 height: brushSize,
                 borderRadius: '50%',
-                backgroundColor: 'rgba(128, 128, 128, 0.8)',
+                border: '2px solid white',
+                boxShadow: '0 0 0 1px black',
                 pointerEvents: 'none',
               }}
             />
@@ -146,7 +237,11 @@ const App: React.FC = () => {
 
         <div className="buttons">
           <Button text="Magic Remove" onClick={handleMagicRemove} />
-          <Button text="Brush" onClick={() => setShowBrushTool(true)} />
+          <Button
+            text="Brush"
+            onClick={() => setShowBrushTool(true)}
+            disabled={!processedImage}
+          />
           <Button
             text="Toggle View"
             onClick={() => {}}
@@ -169,7 +264,7 @@ const App: React.FC = () => {
 
         {showBrushTool && (
           <BrushTool
-            onClose={handleCloseBrushTool} // Close brush tool and deactivate tool
+            onClose={handleCloseBrushTool}
             activeTool={activeTool}
             onToolSelect={setActiveTool}
             brushSize={brushSize}
