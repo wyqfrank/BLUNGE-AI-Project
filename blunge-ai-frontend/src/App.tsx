@@ -95,33 +95,25 @@ const App: React.FC = () => {
     } else if (activeTool === 'restore') {
       // Restore functionality
       ctx.globalCompositeOperation = 'source-over';
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
   
-      // Begin the path for the brush stroke
+      // Create pattern from the original image
+      const pattern = ctx.createPattern(originalImageRef.current, 'no-repeat');
+      if (!pattern) return;
+  
+      ctx.strokeStyle = pattern;
+  
+      // Begin path and draw the line
       ctx.beginPath();
       if (lastPoint) {
         ctx.moveTo(lastPoint.x, lastPoint.y);
-        ctx.lineTo(x, y);
       } else {
-        // If no last point, create a circle at the current position
-        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+        ctx.moveTo(x, y);
       }
-      ctx.closePath();
-  
-      // Clip the path to restrict drawing to the brush area
-      ctx.clip();
-  
-      // Restore the original image inside the clipped area
-      ctx.drawImage(
-        originalImageRef.current,
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      ctx.lineTo(x, y);
+      ctx.stroke();
     }
   
     ctx.restore();
