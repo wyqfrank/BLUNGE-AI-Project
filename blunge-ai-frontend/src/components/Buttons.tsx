@@ -6,7 +6,8 @@ type ButtonProps = {
   onClick: () => void;
   isActive?: boolean;
   disabled?: boolean;
-  onMouseDown?: () => void;  // Optional mouse down event
+  onMouseDown?: () => void;
+  onMouseLeave?: () => void;  // Optional mouse down event
   onMouseUp?: () => void;    // Optional mouse up event
   onTouchStart?: () => void; // Optional touch start event
   onTouchEnd?: () => void;   // Optional touch end event

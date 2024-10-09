@@ -19,6 +19,11 @@ const App: React.FC = () => {
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const processedImageRef = useRef<HTMLImageElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  
+  // Ref to track the last point for continuous drawing
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  
+  const [showCheckerboard, setShowCheckerboard] = useState(false); // State variable to control background transparency
 
   useEffect(() => {
     if (processedImage) {
@@ -43,21 +48,109 @@ const App: React.FC = () => {
 
   const initializeCanvas = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return; // Add null check
+    if (!canvas || !processedImageRef.current) return;
 
-    const ctx = canvas.getContext('2d');
-    if (ctx && processedImageRef.current) {
-      canvas.width = processedImageRef.current.width;
-      canvas.height = processedImageRef.current.height;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    // Set canvas dimensions to match the processed image
+    canvas.width = processedImageRef.current.width;
+    canvas.height = processedImageRef.current.height;
+
+    // Clear the canvas and draw the processed image with a transparent background
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(processedImageRef.current, 0, 0);
+  };
+
+  const draw = (x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+  
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx || !processedImageRef.current || !originalImageRef.current) return;
+  
+    ctx.save();
+    
+    ctx.lineCap = 'round';  // Make the brush strokes rounded
+    ctx.lineJoin = 'round'; // Ensure smooth corners when drawing
+    ctx.lineWidth = brushSize; // Set the width of the brush
+  
+    // Get the last point for smooth drawing
+    const lastPoint = lastPointRef.current;
+  
+    if (activeTool === 'erase') {
+      ctx.globalCompositeOperation = 'destination-out'; // For erasing
+      ctx.strokeStyle = 'rgba(0, 0, 0, 1)'; // Erasing to transparency
+  
+      ctx.beginPath();
+      if (lastPoint) {
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+      } else {
+        ctx.moveTo(x, y);
+      }
+      ctx.lineTo(x, y);  // Draw a line to the current point
+      ctx.stroke();
+    } else if (activeTool === 'restore') {
+      ctx.globalCompositeOperation = 'source-over'; // For restoring
+  
+      // Instead of clipping, restore the original image over the brush area
+      if (lastPoint) {
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+  
+        // Restore the original image in the affected region
+        const minX = Math.min(lastPoint.x, x) - brushSize / 2;
+        const minY = Math.min(lastPoint.y, y) - brushSize / 2;
+        const width = Math.abs(x - lastPoint.x) + brushSize;
+        const height = Math.abs(y - lastPoint.y) + brushSize;
+  
+        // Draw part of the original image in the affected area
+        ctx.drawImage(
+          originalImageRef.current,
+          minX, minY, width, height, // Source coordinates and size from the original image
+          minX, minY, width, height  // Destination coordinates and size on the canvas
+        );
+      } else {
+        // Restore the original image at the current brush position
+        ctx.drawImage(
+          originalImageRef.current,
+          x - brushSize / 2, y - brushSize / 2, brushSize, brushSize, // Source area in the original image
+          x - brushSize / 2, y - brushSize / 2, brushSize, brushSize  // Destination area on the canvas
+        );
+      }
     }
+  
+    ctx.restore();
+  };
+  
+
+  const handleDownloadMask = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = 'processed_image.png';
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        window.URL.revokeObjectURL(url);
+      }
+    }, 'image/png');
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       setUploadedImage(event.target.files[0]);
       setProcessedImage(null);
-      initializeCanvas();
+      setShowCheckerboard(false); // Reset checkerboard when a new image is uploaded
     }
   };
 
@@ -82,6 +175,7 @@ const App: React.FC = () => {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         setProcessedImage(url);
+        setShowCheckerboard(true); // Set background to transparent
       } else {
         console.error('Background removal failed');
       }
@@ -99,10 +193,11 @@ const App: React.FC = () => {
         const scale = processedImageRef.current ? processedImageRef.current.width / containerRect.width : 1;
         const offsetX = (e.clientX - containerRect.left) * scale;
         const offsetY = (e.clientY - containerRect.top) * scale;
-        setCursorPosition({ x: offsetX / scale, y: offsetY / scale });
+        setCursorPosition({ x: e.clientX - containerRect.left, y: e.clientY - containerRect.top });
 
         if (isDrawing) {
           draw(offsetX, offsetY);
+          lastPointRef.current = { x: offsetX, y: offsetY }; // Store the last point for continuous drawing
         }
       }
     }
@@ -117,44 +212,18 @@ const App: React.FC = () => {
         const offsetX = (e.clientX - containerRect.left) * scale;
         const offsetY = (e.clientY - containerRect.top) * scale;
         draw(offsetX, offsetY);
+        lastPointRef.current = { x: offsetX, y: offsetY }; // Initialize the last point
       }
     }
   };
 
   const handleMouseUp = () => {
     setIsDrawing(false);
-  };
-
-  const draw = (x: number, y: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return; // Add null check
-
-    const ctx = canvas.getContext('2d');
-    if (ctx && activeTool && processedImageRef.current && originalImageRef.current) {
-      ctx.save();
-
-      // Set up the brush
-      ctx.beginPath();
-      ctx.arc(x, y, brushSize, 0, Math.PI * 2, true);
-      ctx.closePath();
-
-      if (activeTool === 'erase') {
-        // For erasing, we'll make the area transparent
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.fill();
-      } else if (activeTool === 'restore') {
-        // For restoring, we'll draw the original image in this spot
-        ctx.clip();
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(originalImageRef.current, 0, 0, canvas.width, canvas.height);
-      }
-
-      ctx.restore();
-    }
+    lastPointRef.current = null; // Reset the last point when mouse is released
   };
 
   const handleImageBoxClick = () => {
-    if (!activeTool) {
+    if (!activeTool && !uploadedImage) { // Prevent another upload
       const fileInput = document.getElementById('fileInput') as HTMLInputElement;
       if (fileInput) {
         fileInput.click();
@@ -195,7 +264,7 @@ const App: React.FC = () => {
                   : null
                 : processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)
             }
-            showCheckerboard={Boolean(processedImage)}
+            showCheckerboard={Boolean(processedImage) && !isToggleViewActive}
           />
 
           {processedImage && (
@@ -207,6 +276,7 @@ const App: React.FC = () => {
                 top: 0,
                 width: '100%',
                 height: '100%',
+                backgroundColor: 'transparent',
                 pointerEvents: 'none',
               }}
             />
@@ -247,11 +317,12 @@ const App: React.FC = () => {
             onClick={() => {}}
             onMouseDown={handleToggleViewPress}
             onMouseUp={handleToggleViewRelease}
+            onMouseLeave={handleToggleViewRelease}
             onTouchStart={handleToggleViewPress}
             onTouchEnd={handleToggleViewRelease}
           />
           <Button text="Undo" onClick={() => console.log("Undo")} />
-          <Button text="Download Mask" onClick={() => console.log("Download Mask")} />
+          <Button text="Download Mask" onClick={() => handleDownloadMask()} />
 
           <input
             type="file"

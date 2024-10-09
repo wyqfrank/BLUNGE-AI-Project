@@ -1,9 +1,10 @@
+// ImageBox.tsx
 import React from 'react';
 
 type ImageBoxProps = {
   isSegmentView: boolean;
   imageUrl: string | null;
-  showCheckerboard: boolean; // New prop to show checkerboard background
+  showCheckerboard: boolean;
 };
 
 const ImageBox: React.FC<ImageBoxProps> = ({ isSegmentView, imageUrl, showCheckerboard }) => {
@@ -11,19 +12,22 @@ const ImageBox: React.FC<ImageBoxProps> = ({ isSegmentView, imageUrl, showChecke
     <div
       className="image-box"
       style={{
-        backgroundColor: showCheckerboard ? 'transparent' : '#fff', // Transparent background when the checkerboard is shown
+        backgroundColor: showCheckerboard ? 'transparent' : '#fff',
+        // backgroundImage: showCheckerboard
+        //   ? 'linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc)'
+        //   : 'none',
         backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 10px 0, 10px -10px, 0px 10px',
+        backgroundPosition: '0 0, 10px 10px',
       }}
     >
-      {imageUrl ? (
+      {!showCheckerboard && imageUrl ? (
         <img
           src={imageUrl}
           alt="Uploaded"
           style={{ maxWidth: '100%', maxHeight: '100%' }}
         />
       ) : (
-        <div className="placeholder-text">Click to upload an image</div>
+        !showCheckerboard && <div className="placeholder-text">Click to upload an image</div>
       )}
     </div>
   );
