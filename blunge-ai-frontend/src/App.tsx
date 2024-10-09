@@ -64,17 +64,19 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <div className="container">
-        {/* Display the loading spinner or the image */}
-        {loading ? (
-          <div className="loading-spinner">Processing...</div>
-        ) : (
-          <div onClick={handleImageBoxClick}>
-            <ImageBox
-              isSegmentView={isSegmentView}
-              imageUrl={processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)} // Display original or processed image
-            />
-          </div>
-        )}
+        {/* ImageBox with a loading spinner */}
+        <div className="image-box-container" style={{ position: 'relative' }} onClick={handleImageBoxClick}>
+          <ImageBox
+            isSegmentView={isSegmentView}
+            imageUrl={processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)} // Display original or processed image
+          />
+          {/* Loading spinner overlay */}
+          {loading && (
+            <div className="spinner-overlay">
+              <div className="spinner"></div>
+            </div>
+          )}
+        </div>
 
         <div className="buttons">
           <Button text="Magic Remove" onClick={handleMagicRemove} />
