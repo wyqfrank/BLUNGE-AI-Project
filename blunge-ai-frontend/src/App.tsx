@@ -19,6 +19,8 @@ const App: React.FC = () => {
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const processedImageRef = useRef<HTMLImageElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [backgroundRemovedImage, setBackgroundRemovedImage] = useState<string | null>(null); // Store the background-removed image
+
   
   // Ref to track the last point for continuous drawing
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -91,35 +93,35 @@ const App: React.FC = () => {
       ctx.lineTo(x, y);  // Draw a line to the current point
       ctx.stroke();
     } else if (activeTool === 'restore') {
-      ctx.globalCompositeOperation = 'source-over'; // For restoring
+      // Restore functionality
+      ctx.globalCompositeOperation = 'source-over';
   
-      // Instead of clipping, restore the original image over the brush area
+      // Begin the path for the brush stroke
+      ctx.beginPath();
       if (lastPoint) {
-        ctx.beginPath();
         ctx.moveTo(lastPoint.x, lastPoint.y);
         ctx.lineTo(x, y);
-        ctx.stroke();
-  
-        // Restore the original image in the affected region
-        const minX = Math.min(lastPoint.x, x) - brushSize / 2;
-        const minY = Math.min(lastPoint.y, y) - brushSize / 2;
-        const width = Math.abs(x - lastPoint.x) + brushSize;
-        const height = Math.abs(y - lastPoint.y) + brushSize;
-  
-        // Draw part of the original image in the affected area
-        ctx.drawImage(
-          originalImageRef.current,
-          minX, minY, width, height, // Source coordinates and size from the original image
-          minX, minY, width, height  // Destination coordinates and size on the canvas
-        );
       } else {
-        // Restore the original image at the current brush position
-        ctx.drawImage(
-          originalImageRef.current,
-          x - brushSize / 2, y - brushSize / 2, brushSize, brushSize, // Source area in the original image
-          x - brushSize / 2, y - brushSize / 2, brushSize, brushSize  // Destination area on the canvas
-        );
+        // If no last point, create a circle at the current position
+        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
       }
+      ctx.closePath();
+  
+      // Clip the path to restrict drawing to the brush area
+      ctx.clip();
+  
+      // Restore the original image inside the clipped area
+      ctx.drawImage(
+        originalImageRef.current,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
     }
   
     ctx.restore();
@@ -175,6 +177,7 @@ const App: React.FC = () => {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         setProcessedImage(url);
+        setBackgroundRemovedImage(url);
         setShowCheckerboard(true); // Set background to transparent
       } else {
         console.error('Background removal failed');
