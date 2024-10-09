@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import ImageBox from './components/ImageBox';
 import Button from './components/Buttons';
-import BrushTool from './components/BrushTool'; 
+import BrushTool from './components/BrushTool';
 import './App.css';
 
 const App: React.FC = () => {
-  const [isSegmentView, setIsSegmentView] = useState(false); 
-  const [showBrushTool, setShowBrushTool] = useState(false); 
-  const [activeTool, setActiveTool] = useState<'erase' | 'restore' | null>(null); 
+  const [isSegmentView, setIsSegmentView] = useState(false);
+  const [showBrushTool, setShowBrushTool] = useState(false);
+  const [activeTool, setActiveTool] = useState<'erase' | 'restore' | null>(null);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null); // Store uploaded image
   const [processedImage, setProcessedImage] = useState<string | null>(null); // Store background-removed image
   const [loading, setLoading] = useState(false); // Track loading state
@@ -15,7 +15,8 @@ const App: React.FC = () => {
   // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      setUploadedImage(event.target.files[0]);
+      setUploadedImage(event.target.files[0]); // Set uploaded image file in state
+      setProcessedImage(null); // Reset processed image if a new image is uploaded
     }
   };
 
@@ -25,16 +26,15 @@ const App: React.FC = () => {
       alert("Please upload an image first.");
       return;
     }
-    
+
     setLoading(true);
 
-    // Prepare FormData to send the image to the backend
     const formData = new FormData();
     formData.append('image', uploadedImage);
 
     try {
       // Send image to backend for background removal
-      const response = await fetch('http://localhost:5000/remove-background', {
+      const response = await fetch('http://localhost:3000/remove-background', {
         method: 'POST',
         body: formData,
       });
@@ -53,40 +53,12 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUndo = async () => {
-    const response = await fetch('/undo', { method: 'POST' });
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Undo successful', data);
-      return data.result_image; 
+  // Handle clicking on ImageBox to trigger file input
+  const handleImageBoxClick = () => {
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();  // Programmatically trigger the file input click
     }
-  };
-
-  const handleDownload = async () => {
-    const response = await fetch('/download_image', { method: 'POST' });
-    if (response.ok) {
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'segmented_image.png';
-      link.click();
-      window.URL.revokeObjectURL(url);
-    }
-  };
-
-  const handleToggleView = async () => {
-    setIsSegmentView(!isSegmentView);  
-  };
-
-  // Show the Brush Tool
-  const handleBrushClick = () => {
-    setShowBrushTool(true);
-  };
-
-  // Close the Brush Tool
-  const handleBrushToolClose = () => {
-    setShowBrushTool(false);
   };
 
   return (
@@ -96,27 +68,35 @@ const App: React.FC = () => {
         {loading ? (
           <div className="loading-spinner">Processing...</div>
         ) : (
-          <ImageBox 
-            isSegmentView={isSegmentView}
-            onUndo={handleUndo}
-            activeTool={activeTool}
-            imageUrl={processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)} // Display original or processed image
-          />
+          <div onClick={handleImageBoxClick}>
+            <ImageBox
+              isSegmentView={isSegmentView}
+              imageUrl={processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)} // Display original or processed image
+            />
+          </div>
         )}
 
         <div className="buttons">
           <Button text="Magic Remove" onClick={handleMagicRemove} />
-          <Button text="Brush" onClick={handleBrushClick} />
-          <Button text="Toggle View" onClick={handleToggleView} />
-          <Button text="Undo" onClick={handleUndo} />
-          <Button text="Download Mask" onClick={handleDownload} />
-          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="fileInput" />
+          <Button text="Brush" onClick={() => setShowBrushTool(true)} />
+          <Button text="Toggle View" onClick={() => setIsSegmentView(!isSegmentView)} />
+          <Button text="Undo" onClick={() => console.log("Undo")} />
+          <Button text="Download Mask" onClick={() => console.log("Download Mask")} />
+
+          {/* Upload Image Button */}
+          <input
+            type="file"
+            accept="image/*"
+            id="fileInput"
+            style={{ display: 'none' }} // Hidden input field
+            onChange={handleImageUpload}  // Handle the upload here
+          />
         </div>
 
         {showBrushTool && (
-          <BrushTool 
-            onClose={handleBrushToolClose} 
-            activeTool={activeTool} 
+          <BrushTool
+            onClose={() => setShowBrushTool(false)}
+            activeTool={activeTool}
             onToolSelect={setActiveTool}
           />
         )}
