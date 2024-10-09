@@ -5,12 +5,13 @@ import BrushTool from './components/BrushTool';
 import './App.css';
 
 const App: React.FC = () => {
-  const [isSegmentView, setIsSegmentView] = useState(false);
+  const [isSegmentView, setIsSegmentView] = useState(false); // Track if toggle view is active
   const [showBrushTool, setShowBrushTool] = useState(false);
   const [activeTool, setActiveTool] = useState<'erase' | 'restore' | null>(null);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null); // Store uploaded image
   const [processedImage, setProcessedImage] = useState<string | null>(null); // Store background-removed image
   const [loading, setLoading] = useState(false); // Track loading state
+  const [isToggleViewActive, setIsToggleViewActive] = useState(false); // Track the state of the Toggle View button
 
   // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,6 +62,16 @@ const App: React.FC = () => {
     }
   };
 
+  // Handle Toggle View button press
+  const handleToggleViewPress = () => {
+    setIsToggleViewActive(true); // Activate toggle view (show original image)
+  };
+
+  // Handle Toggle View button release
+  const handleToggleViewRelease = () => {
+    setIsToggleViewActive(false); // Deactivate toggle view (revert to processed image)
+  };
+
   return (
     <div className="app">
       <div className="container">
@@ -68,7 +79,8 @@ const App: React.FC = () => {
         <div className="image-box-container" style={{ position: 'relative' }} onClick={handleImageBoxClick}>
           <ImageBox
             isSegmentView={isSegmentView}
-            imageUrl={processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)} // Display original or processed image
+            imageUrl={isToggleViewActive ? (uploadedImage ? URL.createObjectURL(uploadedImage) : null) : processedImage || (uploadedImage ? URL.createObjectURL(uploadedImage) : null)}
+            showCheckerboard = {Boolean(processedImage)}
           />
           {/* Loading spinner overlay */}
           {loading && (
@@ -81,7 +93,15 @@ const App: React.FC = () => {
         <div className="buttons">
           <Button text="Magic Remove" onClick={handleMagicRemove} />
           <Button text="Brush" onClick={() => setShowBrushTool(true)} />
-          <Button text="Toggle View" onClick={() => setIsSegmentView(!isSegmentView)} />
+          {/* The Toggle View button will call handleToggleViewPress on mouse down and handleToggleViewRelease on mouse up */}
+          <Button
+            text="Toggle View"
+            onClick={() => {}} 
+            onMouseDown={handleToggleViewPress}
+            onMouseUp={handleToggleViewRelease}
+            onTouchStart={handleToggleViewPress}  // For mobile touch events
+            onTouchEnd={handleToggleViewRelease}  // For mobile touch events
+          />
           <Button text="Undo" onClick={() => console.log("Undo")} />
           <Button text="Download Mask" onClick={() => console.log("Download Mask")} />
 
