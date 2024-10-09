@@ -85,8 +85,7 @@ const App: React.FC = () => {
         activeTool={activeTool} 
        
       />      <div className="buttons">
-          <Button text="Select" onClick={() => handleModeToggle('select')} isActive={mode === 'select'} />
-          <Button text="Unselect" onClick={() => handleModeToggle('unselect')} isActive={mode === 'unselect'} />
+          <Button text="Magic Remove" onClick={() => handleModeToggle('select')} isActive={mode === 'select'} />
           <Button text="Brush" onClick={handleBrushClick} />
           <Button text="Toggle View" onClick={handleToggleView} />
           <Button text="Undo" onClick={handleUndo} />

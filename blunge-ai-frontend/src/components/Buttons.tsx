@@ -13,11 +13,8 @@ const Button: React.FC<ButtonProps> = ({ text, onClick, isActive }) => {
   
     // Choose the icon based on the button text
     switch (text) {
-        case 'Select':
+        case 'Magic Remove':
             icon = <FaHandPointer />;
-            break;
-        case 'Unselect':
-            icon = <FaEraser />;
             break;
         case 'Brush':
             icon = <FaMagic />;

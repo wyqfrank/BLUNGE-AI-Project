@@ -35,62 +35,35 @@ useEffect(() => {
   }, [isSegmentView, imageLoaded]);  // Run when isSegmentView or imageLoaded changes
 
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setImageFile(file); // Store the file for later use
+      
+      const reader = new FileReader();
       setLoading(true);
-      const formData = new FormData();
-      formData.append('image', event.target.files[0]);
-
-      const response = await fetch('/upload_image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImage(e.target?.result as string);
+      
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setImage(e.target.result as string);
           setImageLoaded(true);
-          setLoading(false);
-        };
-        reader.readAsDataURL(event.target.files[0]);
-      } else {
-        alert('Failed to upload image');
+        }
         setLoading(false);
-      }
+      };
+
+      reader.onerror = (e) => {
+        console.error('Error reading file:', e);
+        setLoading(false);
+        alert('Failed to load image');
+      };
+
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleImageClick = async (event: React.MouseEvent<HTMLImageElement>) => {
-    if (!imageLoaded) return;
-
-    const displayedImage = event.currentTarget;
-    const rect = displayedImage.getBoundingClientRect();
-    const x = (event.clientX - rect.left) * (displayedImage.naturalWidth / displayedImage.width);
-    const y = (event.clientY - rect.top) * (displayedImage.naturalHeight / displayedImage.height);
-
-    // Send the click coordinates and mode ('select' or 'unselect') to the backend
-    const response = await fetch('/click', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ x: Math.round(x), y: Math.round(y), mode }),
-    });
-
-    const data = await response.json();
-    if (data.result_image) {
-      setImage('data:image/png;base64,' + data.result_image);
-    }
-  };
-
-  const handleUndoClick = async () => {
-    const updatedImage = await onUndo();
-    if (updatedImage) {
-      setImage('data:image/png;base64,' + updatedImage);
-    }
-  };
-
+  
 
   return (
     <div className="image-box" onClick={() => !imageLoaded && document.getElementById('fileInput')?.click()}>
@@ -103,8 +76,7 @@ useEffect(() => {
       <img
         src={image}
         alt="Uploaded"
-        style={{ display: image ? 'block' : 'none', maxWidth: '100%', maxHeight: '500px' }}  // Constrain image size
-        onClick={handleImageClick}  // Handle click event here
+        style={{ display: image ? 'block' : 'none', maxWidth: '100%', maxHeight: '100%' }}  // Constrain image size
       />
     ) : (
       <div className="placeholder-text">Click to upload an image</div>
