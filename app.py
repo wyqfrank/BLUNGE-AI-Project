@@ -4,7 +4,7 @@ Setting up environment
 import sys
 import os
 
-# Add the Segment Anything directory to the Python path
+#Use if the SAM model is in a seperate Directory (RECOMENDED)
 sys.path.append(os.path.expanduser("~/Desktop/segment-anything"))
 
 from segment_anything import sam_model_registry, SamPredictor, SamAutomaticMaskGenerator
@@ -76,7 +76,31 @@ def upload_image():
     # Initialize the overall mask
     overall_mask = np.zeros(current_image_np.shape[:2], dtype=np.uint8)
 
-    return jsonify({'status': 'success'})
+    # Create an image to visualize all masks with different colors
+    mask_image = np.zeros_like(current_image_np)
+
+    # Assign a unique color to each mask
+    for idx, mask_dict in enumerate(all_masks):
+        mask = mask_dict['segmentation']
+        
+        # Generate a random color for each mask (within RGB range)
+        color = np.random.randint(0, 255, size=3, dtype=np.uint8)
+        
+        # Apply the mask to the image with the chosen color
+        mask_image[mask == True] = color
+
+    # Combine the original image with the colored masks
+    colored_masks_image = cv2.addWeighted(current_image_np, 0.7, mask_image, 0.3, 0)
+
+    # Convert the NumPy array back to a PIL image
+    result_image = Image.fromarray(colored_masks_image)
+
+    # Save the image to the same directory as the project
+    save_path = os.path.join(os.getcwd(), 'masked_image.png')
+    result_image.save(save_path)
+
+    return jsonify({'status': 'success', 'image_path': save_path})
+
 
 """
 Handles user interactions with the image
@@ -108,12 +132,14 @@ def click():
 
     if clicked_mask is not None:
         if mode == 'select':
-            # Add the clicked mask to the overall mask
-            overall_mask = np.logical_or(overall_mask, clicked_mask)
+            # Add the clicked mask to the overall mask if it's not already fully added
+            new_mask = np.logical_or(overall_mask, clicked_mask)
+            overall_mask = new_mask
             print(f"Selected mask at point ({x}, {y}).")
         elif mode == 'unselect':
             # Remove the clicked mask from the overall mask by using logical_not
-            overall_mask = np.logical_and(overall_mask, np.logical_not(clicked_mask))
+            new_mask = np.logical_and(overall_mask, np.logical_not(clicked_mask))
+            overall_mask = new_mask
             print(f"Unselected mask at point ({x}, {y}).")
     else:
         print("No segment found at the clicked point.")
@@ -128,15 +154,15 @@ def click():
 
     return jsonify({'result_image': result_base64})
 
+
 @app.route('/undo', methods=['POST'])
 def undo():
     global overall_mask, mask_history
 
     if mask_history:
-        # Revert to the last mask state by popping from the stack
+        
         overall_mask = mask_history.pop()
 
-        # Generate the updated image
         result_image = generate_masked_image()
 
         # Convert the result image to a base64-encoded PNG
@@ -213,21 +239,6 @@ def generate_masked_image():
     # Apply the darkening effect to the background areas
     display_image[mask_bin == 0] = dark_background[mask_bin == 0]
 
-    # # ---- Add Gray Outline Around the Mask ----
-    # # Find contours
-    # contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # # Convert display_image to BGR for OpenCV
-    # display_image_bgr = cv2.cvtColor(display_image, cv2.COLOR_RGB2BGR)
-
-    # # Draw the contours on the display_image
-    # cv2.drawContours(display_image_bgr, contours, -1, (128, 128, 128), 2)  # Gray color, thickness 2
-
-    # # Convert back to RGB
-    # display_image = cv2.cvtColor(display_image_bgr, cv2.COLOR_BGR2RGB)
-    # -----------------------------------------
-
-    # Convert the numpy array back to PIL Image
     result_image = Image.fromarray(display_image)
 
     return result_image
